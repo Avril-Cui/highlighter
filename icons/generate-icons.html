@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<!--
+  Open this file in Chrome, then click each button to download the icon PNG files.
+  Place the downloaded files in this icons/ folder.
+-->
+<html>
+<head>
+  <title>Generate Icons</title>
+  <style>
+    body { font-family: sans-serif; padding: 30px; background: #f5f5f5; }
+    h2 { margin-bottom: 20px; }
+    .row { display: flex; gap: 20px; align-items: center; margin-bottom: 16px; }
+    canvas { border: 1px solid #ddd; border-radius: 8px; }
+    button {
+      padding: 8px 16px; background: #4f46e5; color: white;
+      border: none; border-radius: 6px; cursor: pointer; font-size: 13px;
+    }
+    button:hover { background: #4338ca; }
+  </style>
+</head>
+<body>
+<h2>Web Highlighter — Icon Generator</h2>
+<p style="margin-bottom:20px; color:#555;">Click each Download button, then rename the files as shown and put them in the <code>icons/</code> folder.</p>
+
+<div id="icons"></div>
+
+<script>
+  const sizes = [
+    { size: 16,  name: 'icon16.png' },
+    { size: 48,  name: 'icon48.png' },
+    { size: 128, name: 'icon128.png' }
+  ];
+
+  function drawIcon(canvas) {
+    const s = canvas.width;
+    const ctx = canvas.getContext('2d');
+
+    // Background
+    const r = s * 0.19;
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.lineTo(s - r, 0);
+    ctx.quadraticCurveTo(s, 0, s, r);
+    ctx.lineTo(s, s - r);
+    ctx.quadraticCurveTo(s, s, s - r, s);
+    ctx.lineTo(r, s);
+    ctx.quadraticCurveTo(0, s, 0, s - r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+    ctx.fillStyle = '#4f46e5';
+    ctx.fill();
+
+    // Yellow highlight bar
+    ctx.fillStyle = 'rgba(251, 191, 36, 0.9)';
+    const bh = s * 0.11;
+    const by = s * 0.60;
+    const bx = s * 0.18;
+    const bw = s * 0.64;
+    const br = bh / 2;
+    ctx.beginPath();
+    ctx.moveTo(bx + br, by);
+    ctx.lineTo(bx + bw - br, by);
+    ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + br);
+    ctx.lineTo(bx + bw, by + bh - br);
+    ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - br, by + bh);
+    ctx.lineTo(bx + br, by + bh);
+    ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - br);
+    ctx.lineTo(bx, by + br);
+    ctx.quadraticCurveTo(bx, by, bx + br, by);
+    ctx.closePath();
+    ctx.fill();
+
+    // Pencil emoji / text
+    ctx.fillStyle = 'white';
+    ctx.font = `bold ${s * 0.42}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('✏', s / 2, s * 0.44);
+  }
+
+  const container = document.getElementById('icons');
+
+  sizes.forEach(({ size, name }) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    canvas.style.width = canvas.style.height = Math.max(size, 48) + 'px';
+    canvas.style.imageRendering = 'pixelated';
+    drawIcon(canvas);
+
+    const label = document.createElement('span');
+    label.textContent = `${size}×${size}  →  save as  ${name}`;
+    label.style.fontFamily = 'monospace';
+
+    const btn = document.createElement('button');
+    btn.textContent = `Download ${name}`;
+    btn.addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = name;
+      a.click();
+    });
+
+    row.appendChild(canvas);
+    row.appendChild(label);
+    row.appendChild(btn);
+    container.appendChild(row);
+  });
+</script>
+</body>
+</html>
