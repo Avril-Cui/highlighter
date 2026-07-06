@@ -11,6 +11,6 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "833901647613",
   appId: "1:833901647613:web:495e11a6828a24236a9094",
   measurementId: "G-HNM6PLFKK2",
-  oauthClientId: "833901647613-9geudq72tcs3qou3cbfaeuafbvsl7go6.apps.googleusercontent.com
+  oauthClientId: "833901647613-9geudq72tcs3qou3cbfaeuafbvsl7go6.apps.googleusercontent.com"
 };
 

@@ -30,7 +30,7 @@
     "128": "icons/icon128.png"
   },
   "oauth2": {
-    "client_id": "YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com",
+    "client_id": "833901647613-9geudq72tcs3qou3cbfaeuafbvsl7go6.apps.googleusercontent.com",
     "scopes": ["openid", "email", "profile"]
   }
 }
