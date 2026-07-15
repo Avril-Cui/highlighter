@@ -337,6 +337,90 @@ function highlightToFirestoreDoc(h) {
 // Stats (Firestore)
 // ============================================================
 
+async function cleanupFirestoreStats(uid, token, cutoffDateStr) {
+  // List all documents in users/{uid}/stats
+  const res = await fetch(
+    `${firestoreBase()}/users/${uid}/stats`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) return;
+  const data = await res.json();
+
+  const deletions = (data.documents || [])
+    .filter(doc => {
+      const dateId = doc.name.split('/').pop();
+      return dateId < cutoffDateStr; // older than cutoff
+    })
+    .map(doc =>
+      fetch(`https://firestore.googleapis.com/v1/${doc.name.split('/v1/')[1]}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {})
+    );
+
+  await Promise.all(deletions);
+}
+
+// ============================================================
+// Saved Pages (Firestore)
+// ============================================================
+
+async function getSavedPagesFromFirestore(uid, token) {
+  const res = await fetch(
+    `${firestoreBase()}/users/${uid}:runQuery`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'savedPages' }],
+          orderBy: [{ field: { fieldPath: 'savedAt' }, direction: 'DESCENDING' }]
+        }
+      })
+    }
+  );
+  if (!res.ok) return [];
+  const results = await res.json();
+  return results.filter(r => r.document).map(r => firestoreDocToSavedPage(r.document));
+}
+
+async function savePageToFirestore(uid, token, page) {
+  await fetch(
+    `${firestoreBase()}/users/${uid}/savedPages?documentId=${page.id}`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fields: {
+          url:     { stringValue: page.url },
+          title:   { stringValue: page.title },
+          note:    { stringValue: page.note || '' },
+          savedAt: { timestampValue: page.savedAt }
+        }
+      })
+    }
+  );
+}
+
+async function deleteSavedPageFromFirestore(uid, token, pageId) {
+  await fetch(
+    `${firestoreBase()}/users/${uid}/savedPages/${pageId}`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
+  );
+}
+
+function firestoreDocToSavedPage(doc) {
+  const f  = doc.fields;
+  const id = doc.name.split('/').pop();
+  return {
+    id,
+    url:     f.url?.stringValue     || '',
+    title:   f.title?.stringValue   || '',
+    note:    f.note?.stringValue    || '',
+    savedAt: f.savedAt?.timestampValue || new Date().toISOString()
+  };
+}
+
 async function syncStatsToFirestore(uid, token, date, url, additionalSeconds) {
   const docPath = `${firestoreBase()}/users/${uid}/stats/${date}`;
 

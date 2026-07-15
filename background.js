@@ -6,6 +6,43 @@
 importScripts('firebase-config.js', 'firebase-api.js');
 
 // ============================================================
+// Daily cleanup — keep only last 7 days of stats
+// Runs once per calendar day; checked every time the service worker starts
+// ============================================================
+
+async function runDailyCleanupIfNeeded() {
+  const today = getTodayString();
+  const { lastCleanup } = await chrome.storage.local.get('lastCleanup');
+  if (lastCleanup === today) return;
+
+  await chrome.storage.local.set({ lastCleanup: today });
+
+  // Build cutoff date (7 days ago)
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 7);
+  const cutoffStr = cutoff.toISOString().split('T')[0];
+
+  // Clean local stats
+  const { stats } = await chrome.storage.local.get('stats');
+  if (stats) {
+    const kept = {};
+    for (const [date, data] of Object.entries(stats)) {
+      if (date >= cutoffStr) kept[date] = data;
+    }
+    await chrome.storage.local.set({ stats: kept });
+  }
+
+  // Clean Firestore stats for the logged-in user
+  const tokenData = await getValidToken();
+  if (tokenData) {
+    cleanupFirestoreStats(tokenData.uid, tokenData.token, cutoffStr).catch(() => {});
+  }
+}
+
+// Run cleanup on service worker start
+runDailyCleanupIfNeeded();
+
+// ============================================================
 // Reading stats tracking
 // ============================================================
 
@@ -124,6 +161,12 @@ async function handleMessage(msg) {
       return getLocalHighlightCount();
     case 'SYNC_ON_LOGIN':
       return syncAfterLogin(msg.uid, msg.token);
+    case 'GET_SAVED_PAGES':
+      return getSavedPages();
+    case 'SAVE_PAGE':
+      return savePage(msg.page);
+    case 'DELETE_SAVED_PAGE':
+      return deleteSavedPage(msg.id);
     default:
       throw new Error(`Unknown message: ${msg.type}`);
   }
@@ -224,5 +267,76 @@ async function syncAfterLogin(uid, token) {
     }
 
     await chrome.storage.local.set({ highlights: allHighlights });
+
+    // Also sync saved pages
+    const savedRes = await fetch(
+      `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents/users/${uid}/savedPages?pageSize=500`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (savedRes.ok) {
+      const savedData = await savedRes.json();
+      const remoteSaved = (savedData.documents || []).map(d => firestoreDocToSavedPage(d));
+      const { savedPages } = await chrome.storage.local.get('savedPages');
+      const local = savedPages || [];
+      for (const p of remoteSaved) {
+        if (!local.find(x => x.id === p.id)) local.push(p);
+      }
+      await chrome.storage.local.set({ savedPages: local });
+    }
   } catch (_) {}
+}
+
+// ============================================================
+// Saved pages data operations
+// ============================================================
+
+async function getSavedPages() {
+  const { savedPages } = await chrome.storage.local.get('savedPages');
+  const local = savedPages || [];
+
+  // Refresh from Firestore in background (non-blocking)
+  const tokenData = await getValidToken();
+  if (tokenData) {
+    getSavedPagesFromFirestore(tokenData.uid, tokenData.token)
+      .then(async remote => {
+        // Merge: remote wins for any matching id
+        const merged = [...local];
+        for (const r of remote) {
+          if (!merged.find(x => x.id === r.id)) merged.push(r);
+        }
+        await chrome.storage.local.set({ savedPages: merged });
+      })
+      .catch(() => {});
+  }
+
+  return local;
+}
+
+async function savePage(page) {
+  // Persist locally
+  const { savedPages } = await chrome.storage.local.get('savedPages');
+  const all = savedPages || [];
+  all.unshift(page); // newest first
+  await chrome.storage.local.set({ savedPages: all });
+
+  // Sync to Firestore
+  const tokenData = await getValidToken();
+  if (tokenData) {
+    savePageToFirestore(tokenData.uid, tokenData.token, page).catch(() => {});
+  }
+
+  return { success: true };
+}
+
+async function deleteSavedPage(id) {
+  const { savedPages } = await chrome.storage.local.get('savedPages');
+  const filtered = (savedPages || []).filter(p => p.id !== id);
+  await chrome.storage.local.set({ savedPages: filtered });
+
+  const tokenData = await getValidToken();
+  if (tokenData) {
+    deleteSavedPageFromFirestore(tokenData.uid, tokenData.token, id).catch(() => {});
+  }
+
+  return { success: true };
 }

@@ -94,11 +94,12 @@
   <div class="main-tabs">
     <button class="main-tab active" data-target="settings-panel">Settings</button>
     <button class="main-tab" data-target="stats-panel">Stats</button>
+    <button class="main-tab" data-target="saved-panel">Saved</button>
   </div>
 
   <!-- ——— Settings panel ——— -->
   <div id="settings-panel" class="main-panel">
-    <div class="setting-row">
+    <div class="setting-row-full">
       <div class="setting-label">
         <span class="setting-icon">🎨</span>
         <div>
@@ -106,18 +107,32 @@
           <div class="setting-desc">Background color applied to selected text</div>
         </div>
       </div>
-      <input type="color" id="highlight-color" value="#FFFF00" class="color-swatch">
+      <div class="color-swatches" id="highlight-swatches">
+        <button class="swatch active" data-color="#FFFF00" style="background:#FFFF00" title="Yellow"></button>
+        <button class="swatch"        data-color="#ABEBC6" style="background:#ABEBC6" title="Mint Green"></button>
+        <button class="swatch"        data-color="#FADADD" style="background:#FADADD" title="Pink"></button>
+        <button class="swatch"        data-color="#AED6F1" style="background:#AED6F1" title="Sky Blue"></button>
+        <button class="swatch"        data-color="#FDEBD0" style="background:#FDEBD0" title="Peach"></button>
+        <button class="swatch"        data-color="#E8DAEF" style="background:#E8DAEF" title="Lavender"></button>
+      </div>
     </div>
 
-    <div class="setting-row">
+    <div class="setting-row-full">
       <div class="setting-label">
         <span class="setting-icon">🖊</span>
         <div>
           <div class="setting-name">Text Color</div>
-          <div class="setting-desc">Color of the highlighted text</div>
+          <div class="setting-desc">Color of highlighted text</div>
         </div>
       </div>
-      <input type="color" id="text-color" value="#000000" class="color-swatch">
+      <div class="color-swatches" id="text-swatches">
+        <button class="swatch active" data-color="#000000" style="background:#000000" title="Black"></button>
+        <button class="swatch"        data-color="#1A5276" style="background:#1A5276" title="Dark Blue"></button>
+        <button class="swatch"        data-color="#1E8449" style="background:#1E8449" title="Dark Green"></button>
+        <button class="swatch"        data-color="#922B21" style="background:#922B21" title="Dark Red"></button>
+        <button class="swatch"        data-color="#6C3483" style="background:#6C3483" title="Dark Purple"></button>
+        <button class="swatch"        data-color="#FFFFFF" style="background:#FFFFFF" title="White"></button>
+      </div>
     </div>
 
     <div class="setting-row-full">
@@ -186,6 +201,40 @@
         <li class="recent-empty">No pages recorded yet</li>
       </ul>
     </div>
+  </div>
+
+  <!-- ——— Saved Pages panel ——— -->
+  <div id="saved-panel" class="main-panel hidden">
+
+    <!-- Save the current page -->
+    <div class="save-box">
+      <div class="save-box-row">
+        <img class="save-favicon" id="save-favicon" src="" alt="">
+        <div class="save-box-texts">
+          <div class="save-box-title" id="current-title">Loading…</div>
+          <div class="save-box-url"   id="current-url"></div>
+        </div>
+      </div>
+      <textarea id="save-note" class="save-note-input"
+                placeholder="Add a note for this page (optional)…"
+                maxlength="300"></textarea>
+      <div class="save-box-footer">
+        <button class="btn btn-primary" id="save-page-btn">Save This Page</button>
+        <span class="already-saved-msg hidden" id="already-saved-msg">✓ Already saved</span>
+      </div>
+    </div>
+
+    <!-- Saved list header -->
+    <div class="saved-list-header">
+      <span class="saved-list-title">All Saved Pages</span>
+      <span class="saved-count" id="saved-count"></span>
+    </div>
+
+    <!-- Sorted list -->
+    <ul class="saved-list" id="saved-list">
+      <li class="saved-empty" id="saved-empty">No pages saved yet</li>
+    </ul>
+
   </div>
 </div>
 
