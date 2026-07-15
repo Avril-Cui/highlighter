@@ -93,7 +93,6 @@
 
   <div class="main-tabs">
     <button class="main-tab active" data-target="settings-panel">Settings</button>
-    <button class="main-tab" data-target="stats-panel">Stats</button>
     <button class="main-tab" data-target="saved-panel">Saved</button>
   </div>
 
@@ -173,36 +172,6 @@
     </div>
   </div>
 
-  <!-- ——— Stats panel ——— -->
-  <div id="stats-panel" class="main-panel hidden">
-    <div class="stats-date" id="stats-date"></div>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">📄</div>
-        <div class="stat-value" id="stat-pages">—</div>
-        <div class="stat-label">Pages read today</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">⏱</div>
-        <div class="stat-value" id="stat-time">—</div>
-        <div class="stat-label">Reading time today</div>
-      </div>
-      <div class="stat-card stat-card-wide">
-        <div class="stat-icon">✏️</div>
-        <div class="stat-value" id="stat-highlights">—</div>
-        <div class="stat-label">Total highlights</div>
-      </div>
-    </div>
-
-    <div class="recent-section">
-      <div class="recent-title">Pages visited today</div>
-      <ul class="recent-list" id="recent-list">
-        <li class="recent-empty">No pages recorded yet</li>
-      </ul>
-    </div>
-  </div>
-
   <!-- ——— Saved Pages panel ——— -->
   <div id="saved-panel" class="main-panel hidden">
 
@@ -215,8 +184,10 @@
           <div class="save-box-url"   id="current-url"></div>
         </div>
       </div>
+      <input type="text" id="save-custom-title" class="save-title-input"
+             placeholder="Page name…" maxlength="120">
       <textarea id="save-note" class="save-note-input"
-                placeholder="Add a note for this page (optional)…"
+                placeholder="Add a note (optional)…"
                 maxlength="300"></textarea>
       <div class="save-box-footer">
         <button class="btn btn-primary" id="save-page-btn">Save This Page</button>

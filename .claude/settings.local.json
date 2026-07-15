@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node --check /Users/xiaokeai/Desktop/highlighter/popup.js)"
+      "Bash(node --check /Users/xiaokeai/Desktop/highlighter/popup.js)",
+      "Bash(node -e ':*)"
     ]
   }
 }

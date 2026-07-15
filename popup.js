@@ -22,7 +22,6 @@ async function showMainScreen(user) {
   document.getElementById('header-email').textContent = user.email || user.displayName || '';
 
   await loadAndApplySettings();
-  loadStats();
 }
 
 // ============================================================
@@ -147,7 +146,6 @@ function setupMainTabs() {
       tab.classList.add('active');
       document.getElementById(tab.dataset.target).classList.remove('hidden');
 
-      if (tab.dataset.target === 'stats-panel') loadStats();
       if (tab.dataset.target === 'saved-panel') loadSavedPanel();
     });
   });
@@ -287,56 +285,6 @@ function formatKeyCode(code) {
 }
 
 // ============================================================
-// Stats
-// ============================================================
-
-async function loadStats() {
-  // Show today's date
-  const today = new Date();
-  document.getElementById('stats-date').textContent =
-    today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-  // Fetch stats from background
-  chrome.runtime.sendMessage({ type: 'GET_STATS' }, stats => {
-    const pages = (stats?.pagesRead || []).length;
-    const seconds = stats?.readingSeconds || 0;
-
-    document.getElementById('stat-pages').textContent = pages;
-    document.getElementById('stat-time').textContent  = formatDuration(seconds);
-
-    // Recent pages list
-    const list = document.getElementById('recent-list');
-    const urls = (stats?.pagesRead || []).slice(-10).reverse();
-    if (urls.length === 0) {
-      list.innerHTML = '<li class="recent-empty">No pages recorded yet</li>';
-    } else {
-      list.innerHTML = urls.map(url => {
-        try {
-          const u = new URL(url);
-          const label = u.hostname + (u.pathname !== '/' ? u.pathname.slice(0, 40) : '');
-          return `<li title="${url}">${label}</li>`;
-        } catch (_) {
-          return `<li>${url.slice(0, 50)}</li>`;
-        }
-      }).join('');
-    }
-  });
-
-  // Total highlights count
-  chrome.runtime.sendMessage({ type: 'GET_HIGHLIGHT_COUNT' }, count => {
-    document.getElementById('stat-highlights').textContent = count ?? '—';
-  });
-}
-
-function formatDuration(seconds) {
-  if (!seconds) return '0m';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
-}
-
-// ============================================================
 // Saved Pages
 // ============================================================
 
@@ -346,11 +294,12 @@ function setupSavedPanel() {
   document.getElementById('save-page-btn').addEventListener('click', async () => {
     if (!currentTabInfo || !currentTabInfo.url) return;
 
-    const note = document.getElementById('save-note').value.trim();
+    const customTitle = document.getElementById('save-custom-title').value.trim();
+    const note        = document.getElementById('save-note').value.trim();
     const page = {
       id: genId(),
       url: currentTabInfo.url,
-      title: currentTabInfo.title || currentTabInfo.url,
+      title: customTitle || currentTabInfo.title || currentTabInfo.url,
       note,
       savedAt: new Date().toISOString()
     };
@@ -362,6 +311,7 @@ function setupSavedPanel() {
     chrome.runtime.sendMessage({ type: 'SAVE_PAGE', page }, () => {
       btn.disabled = false;
       btn.textContent = 'Save This Page';
+      document.getElementById('save-custom-title').value = '';
       document.getElementById('save-note').value = '';
 
       // Show "Already saved" badge and refresh list
@@ -382,10 +332,11 @@ async function loadSavedPanel() {
   if (tab && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
     currentTabInfo = { url: tab.url, title: tab.title };
 
-    document.getElementById('current-title').textContent = tab.title || tab.url;
-    document.getElementById('current-url').textContent   = (() => {
+    document.getElementById('current-title').textContent    = tab.title || tab.url;
+    document.getElementById('current-url').textContent      = (() => {
       try { return new URL(tab.url).hostname; } catch (_) { return tab.url; }
     })();
+    document.getElementById('save-custom-title').value      = tab.title || '';
 
     const faviconEl = document.getElementById('save-favicon');
     try {
