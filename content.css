@@ -1,5 +1,5 @@
 /* ============================================================
-   Web Highlighter — injected styles
+   Web Highlighter — injected styles (Inkwell Dark aesthetic)
    ============================================================ */
 
 mark.wh-highlight {
@@ -20,33 +20,37 @@ mark.wh-highlight:hover {
   z-index: 2147483647;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 9px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 12px;
-  font-weight: 500;
+  gap: 5px;
+  padding: 5px 10px;
+  font-family: 'JetBrains Mono', 'Fira Mono', 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   line-height: 1;
-  color: #fff;
-  background: #ef4444;
-  border: none;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  color: #EDE0C8;
+  background: #161310;
+  border: 1px solid #453C30;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(245, 197, 24, 0.08);
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
   animation: wh-fadein 0.12s ease;
+  transition: border-color 0.1s ease, color 0.1s ease;
 }
 
 .wh-remove-btn:hover {
-  background: #dc2626;
+  border-color: #E05A48;
+  color: #E05A48;
+  background: #161310;
 }
 
 .wh-remove-x {
   font-size: 10px;
-  opacity: 0.85;
+  opacity: 0.7;
 }
 
 @keyframes wh-fadein {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(3px); }
   to   { opacity: 1; transform: translateY(0); }
 }

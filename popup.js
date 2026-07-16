@@ -486,11 +486,43 @@ function truncate(str, max) {
 }
 
 // ============================================================
+// Theme (dark / light)
+// ============================================================
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const icon = theme === 'light' ? '🌙' : '☀';
+  const tip  = theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode';
+  document.querySelectorAll('.btn-theme').forEach(btn => {
+    btn.textContent = icon;
+    btn.title = tip;
+  });
+}
+
+function setupThemeToggle() {
+  document.querySelectorAll('.btn-theme').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      await chrome.storage.local.set({ theme: next });
+    });
+  });
+}
+
+async function loadTheme() {
+  const { theme } = await chrome.storage.local.get('theme');
+  applyTheme(theme || 'dark');
+}
+
+// ============================================================
 // Boot — ALL functions are defined above, so this runs safely
 // Uses readyState check so it works whether DOM is ready or not
 // ============================================================
 
 async function initPopup() {
+  await loadTheme();
+  setupThemeToggle();
   setupAuthTabs();
   setupMainTabs();
   setupAuthButtons();
