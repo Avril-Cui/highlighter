@@ -1,5 +1,6 @@
 /* ============================================================
-   Web Highlighter — injected styles (Inkwell Dark aesthetic)
+   Web Highlighter — injected styles
+   Panel themes sync with the extension's dark / light mode
    ============================================================ */
 
 mark.wh-highlight {
@@ -7,50 +8,232 @@ mark.wh-highlight {
   padding: 1px 0;
   cursor: pointer;
   transition: filter 0.15s ease;
-  /* background-color and color are set inline per-highlight */
 }
+mark.wh-highlight:hover { filter: brightness(0.88); }
 
-mark.wh-highlight:hover {
-  filter: brightness(0.88);
-}
+/* ============================================================
+   Persistent side annotations  (position: fixed via JS)
+   ============================================================ */
 
-/* Floating remove button */
-.wh-remove-btn {
-  position: absolute;
-  z-index: 2147483647;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
+.wh-annotation {
+  z-index: 2147483646;
+  width: 224px;
+  border-radius: 0 5px 5px 0;
+  overflow: hidden;
   font-family: 'JetBrains Mono', 'Fira Mono', 'Courier New', monospace;
+  animation: wh-ann-in 0.18s ease;
+
+  /* dark */
+  background:  #161310;
+  border:      1px solid #2C2720;
+  border-left: 3px solid #F5C518;
+  box-shadow:  0 2px 10px rgba(0, 0, 0, 0.55);
+}
+.wh-annotation.wh-theme-light {
+  background:  #F0E9D6;
+  border:      1px solid #D2C8AE;
+  border-left: 3px solid #B8860B;
+  box-shadow:  0 2px 10px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes wh-ann-in {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.wh-ann-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 7px 8px 7px 9px;
+}
+
+.wh-ann-text {
+  flex: 1;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  line-height: 1;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
   color: #EDE0C8;
-  background: #161310;
-  border: 1px solid #453C30;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(245, 197, 24, 0.08);
-  cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
-  animation: wh-fadein 0.12s ease;
-  transition: border-color 0.1s ease, color 0.1s ease;
 }
+.wh-theme-light .wh-ann-text { color: #1C1810; }
 
-.wh-remove-btn:hover {
-  border-color: #E05A48;
-  color: #E05A48;
-  background: #161310;
-}
-
-.wh-remove-x {
+.wh-ann-del {
+  background: none;
+  border: none;
   font-size: 10px;
-  opacity: 0.7;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+  font-family: inherit;
+  margin-top: 1px;
+  transition: color 0.12s;
+  color: #453C30;
+}
+.wh-theme-light .wh-ann-del { color: #B8A888; }
+.wh-ann-del:hover             { color: #E05A48; }
+.wh-theme-light .wh-ann-del:hover { color: #B83020; }
+
+/* ============================================================
+   Hover panel — simplified: just the add-comment form
+   (position: fixed via JS, right edge of viewport)
+   ============================================================ */
+
+.wh-comment-panel {
+  z-index: 2147483647;
+  width: 264px;
+  border-radius: 6px;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', 'Fira Mono', 'Courier New', monospace;
+  font-size: 12px;
+  animation: wh-panel-in 0.14s ease;
+
+  /* dark */
+  background:  #161310;
+  border:      1px solid #2C2720;
+  color:       #EDE0C8;
+  box-shadow:  0 6px 24px rgba(0, 0, 0, 0.65),
+               0 0 0 1px rgba(245, 197, 24, 0.07);
+}
+.wh-comment-panel.wh-theme-light {
+  background:  #F0E9D6;
+  border:      1px solid #D2C8AE;
+  color:       #1C1810;
+  box-shadow:  0 6px 24px rgba(0, 0, 0, 0.14),
+               0 0 0 1px rgba(184, 134, 11, 0.08);
 }
 
-@keyframes wh-fadein {
-  from { opacity: 0; transform: translateY(3px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes wh-panel-in {
+  from { opacity: 0; transform: translateX(6px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
+
+/* Panel header */
+.wh-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 11px 7px;
+  border-bottom: 1px solid #2C2720;
+}
+.wh-theme-light .wh-panel-header { border-bottom-color: #D2C8AE; }
+
+.wh-panel-title {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #7A6E58;
+}
+.wh-theme-light .wh-panel-title { color: #7A6850; }
+
+.wh-panel-close {
+  background: none;
+  border: none;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  font-family: inherit;
+  transition: color 0.12s;
+  color: #7A6E58;
+}
+.wh-theme-light .wh-panel-close       { color: #7A6850; }
+.wh-panel-close:hover                  { color: #EDE0C8; }
+.wh-theme-light .wh-panel-close:hover  { color: #1C1810; }
+
+/* Add comment form */
+.wh-comment-form {
+  padding: 8px 11px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.wh-comment-textarea {
+  width: 100%;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', 'Fira Mono', 'Courier New', monospace;
+  font-size: 11.5px;
+  line-height: 1.5;
+  padding: 6px 9px;
+  resize: none;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  /* dark */
+  background: #0E0C08;
+  border:     1px solid #2C2720;
+  color:      #EDE0C8;
+}
+.wh-theme-light .wh-comment-textarea {
+  background:   #FAF6EE;
+  border-color: #D2C8AE;
+  color:        #1C1810;
+}
+.wh-comment-textarea:focus {
+  border-color: #F5C518;
+  box-shadow: 0 0 0 2px rgba(245, 197, 24, 0.10);
+}
+.wh-theme-light .wh-comment-textarea:focus {
+  border-color: #B8860B;
+  box-shadow:   0 0 0 2px rgba(184, 134, 11, 0.12);
+}
+.wh-comment-textarea::placeholder            { color: #453C30; }
+.wh-theme-light .wh-comment-textarea::placeholder { color: #B8A888; }
+.wh-comment-textarea:disabled                { opacity: 0.5; }
+
+/* Action row */
+.wh-comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wh-btn-add-comment {
+  border: none;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', 'Fira Mono', 'Courier New', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background 0.12s;
+
+  /* dark */
+  background: #F5C518;
+  color:      #0A0800;
+}
+.wh-theme-light .wh-btn-add-comment        { background: #1C1810; color: #FAF6EE; }
+.wh-btn-add-comment:hover                   { background: #DDB010; }
+.wh-theme-light .wh-btn-add-comment:hover   { background: #2E2618; }
+.wh-btn-add-comment:disabled {
+  background: rgba(245, 197, 24, 0.2);
+  color: #7A6E58;
+  cursor: not-allowed;
+}
+.wh-theme-light .wh-btn-add-comment:disabled {
+  background: rgba(28, 24, 16, 0.12);
+  color: #7A6850;
+}
+
+.wh-btn-remove-hl {
+  background: none;
+  border: none;
+  font-family: 'JetBrains Mono', 'Fira Mono', 'Courier New', monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.12s;
+  color: #7A6E58;
+}
+.wh-theme-light .wh-btn-remove-hl       { color: #7A6850; }
+.wh-btn-remove-hl:hover                  { color: #E05A48; }
+.wh-theme-light .wh-btn-remove-hl:hover  { color: #B83020; }

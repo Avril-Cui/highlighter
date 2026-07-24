@@ -361,12 +361,15 @@ async function loadSavedPanel() {
 }
 
 function loadSavedList() {
-  chrome.runtime.sendMessage({ type: 'GET_SAVED_PAGES' }, pages => {
-    renderSavedList(Array.isArray(pages) ? pages : []);
+  Promise.all([
+    new Promise(r => chrome.runtime.sendMessage({ type: 'GET_SAVED_PAGES' }, r)),
+    new Promise(r => chrome.runtime.sendMessage({ type: 'GET_COMMENT_COUNTS' }, r))
+  ]).then(([pages, counts]) => {
+    renderSavedList(Array.isArray(pages) ? pages : [], counts || {});
   });
 }
 
-function renderSavedList(pages) {
+function renderSavedList(pages, counts = {}) {
   const list    = document.getElementById('saved-list');
   const countEl = document.getElementById('saved-count');
 
@@ -381,11 +384,17 @@ function renderSavedList(pages) {
   const sorted = [...pages].sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
 
   list.innerHTML = sorted.map(page => {
-    const domain  = (() => { try { return new URL(page.url).hostname; } catch (_) { return page.url; } })();
-    const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=28`;
-    const dateStr = formatSavedDate(page.savedAt);
+    const domain       = (() => { try { return new URL(page.url).hostname; } catch (_) { return page.url; } })();
+    const favicon      = `https://www.google.com/s2/favicons?domain=${domain}&sz=28`;
+    const dateStr      = formatSavedDate(page.savedAt);
+    const commentCount = counts[page.url] || 0;
     const noteHtml = page.note
       ? `<div class="saved-item-note">${escapeHtml(page.note)}</div>`
+      : '';
+    const commentBadge = commentCount > 0
+      ? `<span class="saved-comment-badge" title="${commentCount} comment${commentCount !== 1 ? 's' : ''}">
+           ✎ ${commentCount}
+         </span>`
       : '';
 
     return `
@@ -399,6 +408,7 @@ function renderSavedList(pages) {
             <div class="saved-item-title" title="${escapeHtml(page.title)}">${escapeHtml(truncate(page.title, 48))}</div>
             <div class="saved-item-meta">
               <span class="saved-item-domain">${escapeHtml(domain)}</span>
+              ${commentBadge}
               <span class="saved-item-date">${dateStr}</span>
             </div>
           </div>
@@ -506,6 +516,11 @@ function setupThemeToggle() {
       const next = current === 'dark' ? 'light' : 'dark';
       applyTheme(next);
       await chrome.storage.local.set({ theme: next });
+      // Notify active tab's content script so the panel theme updates immediately
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, { type: 'THEME_UPDATED', theme: next }).catch(() => {});
+      });
     });
   });
 }

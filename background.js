@@ -167,6 +167,12 @@ async function handleMessage(msg) {
       return savePage(msg.page);
     case 'DELETE_SAVED_PAGE':
       return deleteSavedPage(msg.id);
+    case 'ADD_COMMENT':
+      return addCommentData(msg.highlightId, msg.url, msg.comment);
+    case 'DELETE_COMMENT':
+      return deleteCommentData(msg.highlightId, msg.url, msg.commentId);
+    case 'GET_COMMENT_COUNTS':
+      return getCommentCounts();
     default:
       throw new Error(`Unknown message: ${msg.type}`);
   }
@@ -177,22 +183,12 @@ async function handleMessage(msg) {
 // ============================================================
 
 async function getHighlightsForPage(url) {
+  // Local storage is the source of truth for the current device.
+  // Cross-device sync is handled once by syncAfterLogin when the user logs in.
+  // Reading from Firestore here risks contaminating local XPath data with stale
+  // or incomplete remote records, causing highlights to restore to wrong positions.
   const { highlights } = await chrome.storage.local.get('highlights');
-  const localHighlights = (highlights || {})[url] || [];
-
-  // Try fetching from Firestore (authoritative source)
-  const tokenData = await getValidToken();
-  if (tokenData) {
-    try {
-      const remote = await fetchHighlightsFromFirestore(tokenData.uid, tokenData.token, url);
-      const allHighlights = highlights || {};
-      allHighlights[url] = remote;
-      await chrome.storage.local.set({ highlights: allHighlights });
-      return remote;
-    } catch (_) {}
-  }
-
-  return localHighlights;
+  return (highlights || {})[url] || [];
 }
 
 async function saveHighlightData(highlight) {
@@ -339,4 +335,55 @@ async function deleteSavedPage(id) {
   }
 
   return { success: true };
+}
+
+// ============================================================
+// Comment operations
+// ============================================================
+
+async function addCommentData(highlightId, url, comment) {
+  const { highlights } = await chrome.storage.local.get('highlights');
+  const all = highlights || {};
+  const page = all[url] || [];
+  const h = page.find(x => x.id === highlightId);
+  if (!h) return { success: false };
+
+  if (!h.comments) h.comments = [];
+  h.comments.push(comment);
+  await chrome.storage.local.set({ highlights: all });
+
+  const tokenData = await getValidToken();
+  if (tokenData) {
+    updateHighlightCommentsInFirestore(tokenData.uid, tokenData.token, highlightId, h.comments).catch(() => {});
+  }
+  return { success: true, comments: h.comments };
+}
+
+async function deleteCommentData(highlightId, url, commentId) {
+  const { highlights } = await chrome.storage.local.get('highlights');
+  const all = highlights || {};
+  const page = all[url] || [];
+  const h = page.find(x => x.id === highlightId);
+  if (!h) return { success: false };
+
+  h.comments = (h.comments || []).filter(c => c.id !== commentId);
+  await chrome.storage.local.set({ highlights: all });
+
+  const tokenData = await getValidToken();
+  if (tokenData) {
+    updateHighlightCommentsInFirestore(tokenData.uid, tokenData.token, highlightId, h.comments).catch(() => {});
+  }
+  return { success: true, comments: h.comments };
+}
+
+async function getCommentCounts() {
+  const { highlights } = await chrome.storage.local.get('highlights');
+  if (!highlights) return {};
+  const counts = {};
+  for (const [url, arr] of Object.entries(highlights)) {
+    let total = 0;
+    for (const h of arr) total += (h.comments || []).length;
+    if (total > 0) counts[url] = total;
+  }
+  return counts;
 }

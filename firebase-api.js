@@ -303,34 +303,78 @@ async function getTotalHighlightCount(uid, token) {
 function firestoreDocToHighlight(doc) {
   const f = doc.fields;
   const id = doc.name.split('/').pop();
+  const comments = (f.comments?.arrayValue?.values || []).map(v => {
+    const cf = v.mapValue?.fields || {};
+    return {
+      id:        cf.id?.stringValue        || '',
+      text:      cf.text?.stringValue      || '',
+      createdAt: cf.createdAt?.timestampValue || new Date().toISOString()
+    };
+  }).filter(c => c.id && c.text);
   return {
     id,
-    url: f.url?.stringValue || '',
-    text: f.text?.stringValue || '',
-    startXPath: f.startXPath?.stringValue || '',
+    url:         f.url?.stringValue         || '',
+    text:        f.text?.stringValue        || '',
+    startXPath:  f.startXPath?.stringValue  || '',
     startOffset: parseInt(f.startOffset?.integerValue || '0'),
-    endXPath: f.endXPath?.stringValue || '',
-    endOffset: parseInt(f.endOffset?.integerValue || '0'),
-    color: f.color?.stringValue || '#FFFF00',
-    textColor: f.textColor?.stringValue || '#000000',
-    createdAt: f.createdAt?.timestampValue || new Date().toISOString()
+    endXPath:    f.endXPath?.stringValue    || '',
+    endOffset:   parseInt(f.endOffset?.integerValue   || '0'),
+    color:       f.color?.stringValue       || '#FFFF00',
+    textColor:   f.textColor?.stringValue   || '#000000',
+    createdAt:   f.createdAt?.timestampValue || new Date().toISOString(),
+    comments
+  };
+}
+
+function commentsToFirestoreArray(comments) {
+  if (!comments || comments.length === 0) {
+    return { arrayValue: {} }; // empty array — omit values key to avoid REST API issues
+  }
+  return {
+    arrayValue: {
+      values: comments.map(c => ({
+        mapValue: {
+          fields: {
+            id:        { stringValue: c.id },
+            text:      { stringValue: c.text },
+            createdAt: { timestampValue: c.createdAt }
+          }
+        }
+      }))
+    }
   };
 }
 
 function highlightToFirestoreDoc(h) {
-  return {
-    fields: {
-      url: { stringValue: h.url },
-      text: { stringValue: h.text },
-      startXPath: { stringValue: h.startXPath },
-      startOffset: { integerValue: String(h.startOffset) },
-      endXPath: { stringValue: h.endXPath },
-      endOffset: { integerValue: String(h.endOffset) },
-      color: { stringValue: h.color },
-      textColor: { stringValue: h.textColor },
-      createdAt: { timestampValue: h.createdAt || new Date().toISOString() }
-    }
+  const fields = {
+    url:         { stringValue: h.url },
+    text:        { stringValue: h.text },
+    startXPath:  { stringValue: h.startXPath },
+    startOffset: { integerValue: String(h.startOffset) },
+    endXPath:    { stringValue: h.endXPath },
+    endOffset:   { integerValue: String(h.endOffset) },
+    color:       { stringValue: h.color },
+    textColor:   { stringValue: h.textColor },
+    createdAt:   { timestampValue: h.createdAt || new Date().toISOString() }
   };
+  // Only include comments field when there are comments.
+  // Sending { arrayValue: {} } for an empty array causes Firestore REST API
+  // to return a 400 error, which silently blocks the entire highlight save.
+  if (h.comments && h.comments.length > 0) {
+    fields.comments = commentsToFirestoreArray(h.comments);
+  }
+  return { fields };
+}
+
+async function updateHighlightCommentsInFirestore(uid, token, highlightId, comments) {
+  await fetch(
+    `${firestoreBase()}/users/${uid}/highlights/${highlightId}?updateMask.fieldPaths=comments`,
+    {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: { comments: commentsToFirestoreArray(comments) } })
+    }
+  );
 }
 
 // ============================================================
